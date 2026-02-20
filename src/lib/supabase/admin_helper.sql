@@ -1,0 +1,2 @@
+-- Run this with your USER ID to make yourself admin if needed
+-- update public.profiles set role = 'admin' where id = 'YOUR_UUID_HERE';
