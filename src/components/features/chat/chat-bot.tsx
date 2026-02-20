@@ -39,8 +39,7 @@ export function ChatBot() {
 
     // Use standard import
     const chatHelpers = useChat({
-        id: userId ? `chat-${userId}` : 'chat-guest',
-        api: '/api/chat',
+        id: userId ? `chat-${userId}` : 'chat-guest',        
         onError: (error) => console.error("Chat error:", error),
     }) as any;
 
