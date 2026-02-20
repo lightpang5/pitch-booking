@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+// ✅ 수정 1: 사용하지 않는 useEffect 제거
+import React, { useState, useMemo } from "react";
 import {
   format,
   startOfWeek,
@@ -13,19 +14,15 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ❌ 자기 자신을 import 하는 코드는 절대 없어야 합니다! (삭제됨)
-
-// Supabase 타입 정의
 type Booking = Database['public']['Tables']['bookings']['Row'];
 
-// ✅ 1. 인터페이스 내보내기 (export 필수)
 export interface SelectedSlot {
   date: Date;
   time: string;
 }
 
+// ✅ 수정 2: 사용하지 않는 pitchId를 Prop에서 제거
 interface BookingSchedulerProps {
-  pitchId: string;
   reservations: Booking[];
   selectedSlot: SelectedSlot | null;
   onSelectSlot: (slot: SelectedSlot) => void;
@@ -36,9 +33,7 @@ interface BookingSchedulerProps {
   excludeBookingId?: string;
 }
 
-// ✅ 2. 컴포넌트 선언 (이 부분이 없어서 에러가 난 것입니다!)
 const BookingScheduler: React.FC<BookingSchedulerProps> = ({
-  pitchId,
   reservations,
   selectedSlot,
   onSelectSlot,
@@ -52,20 +47,16 @@ const BookingScheduler: React.FC<BookingSchedulerProps> = ({
     initialDate ? startOfWeek(initialDate, { weekStartsOn: 1 }) : startOfWeek(new Date(), { weekStartsOn: 1 })
   );
 
-  // useEffect(() => {
-  //   onWeekChange(currentWeekStart, addDays(currentWeekStart, 7));
-  // }, [currentWeekStart, onWeekChange]);
-
   const goToPreviousWeek = () => {
     const newStart = addDays(currentWeekStart, -7);
     setCurrentWeekStart(newStart);
-    onWeekChange(newStart, addDays(newStart, 7)); // 여기서 직접 호출
+    onWeekChange(newStart, addDays(newStart, 7));
   };
 
   const goToNextWeek = () => {
     const newStart = addDays(currentWeekStart, 7);
     setCurrentWeekStart(newStart);
-    onWeekChange(newStart, addDays(newStart, 7)); // 여기서 직접 호출
+    onWeekChange(newStart, addDays(newStart, 7));
   };
 
   const hours = useMemo(() => {
@@ -245,5 +236,4 @@ const BookingScheduler: React.FC<BookingSchedulerProps> = ({
   );
 };
 
-// ✅ 3. Default Export (파일 맨 끝)
 export default BookingScheduler;

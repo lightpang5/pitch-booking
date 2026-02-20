@@ -9,6 +9,36 @@ import { BookingEditDialog } from "@/components/features/booking/booking-edit-di
 import { InvitationActions } from "@/components/features/booking/invitation-actions"
 import { NotificationItem } from "@/components/features/notification/notification-item"
 
+// ✅ 수정 1: 타입 에러를 잡기 위한 인터페이스 정의
+interface ProfileData {
+    email?: string;
+    full_name?: string;
+}
+
+interface ParticipantData {
+    role: string;
+    status: string;
+    profiles?: ProfileData | ProfileData[] | null;
+}
+
+interface PitchData {
+    id: string;
+    name: string;
+    location: string;
+}
+
+interface DashboardBooking {
+    id: string;
+    start_time: string;
+    end_time: string;
+    total_price: number;
+    status: string;
+    pitch: PitchData | null;
+    participants: ParticipantData[];
+    myRole: string;
+    myStatus: string;
+}
+
 export default async function DashboardPage() {
     const supabase = await createClient()
 
@@ -61,12 +91,12 @@ export default async function DashboardPage() {
         console.error("Error fetching bookings:", error)
     }
 
-    // Transform and split data for UI
-    const allBookings = (participations || []).map(p => {
+   // Transform and split data for UI
+    const allBookings = (participations || []).map((p): DashboardBooking | null => {
         const b = Array.isArray(p.bookings) ? p.bookings[0] : p.bookings
         if (!b) return null
 
-        const pitch = Array.isArray(b.pitches) ? b.pitches[0] : b.pitches
+        const pitchRaw = Array.isArray(b.pitches) ? b.pitches[0] : b.pitches
         const allParticipants = b.booking_participants || []
 
         return {
@@ -75,12 +105,13 @@ export default async function DashboardPage() {
             end_time: b.end_time,
             total_price: b.total_price,
             status: b.status,
-            pitch: pitch,
-            participants: allParticipants,
+            // 👇 null일 가능성을 명확하게 처리했습니다!
+            pitch: pitchRaw ? (pitchRaw as unknown as PitchData) : null,
+            participants: allParticipants as unknown as ParticipantData[],
             myRole: p.role,
             myStatus: p.status
         }
-    }).filter((b): b is any => b !== null)
+    }).filter((b): b is DashboardBooking => b !== null)
 
     const now = new Date();
 
@@ -180,12 +211,16 @@ export default async function DashboardPage() {
                                                     <span>Attendees ({booking.participants.length})</span>
                                                 </div>
                                                 <div className="flex flex-wrap gap-1">
-                                                    {booking.participants.map((p: any, idx: number) => (
-                                                        <span key={idx} className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-md text-slate-700">
-                                                            {p.profiles?.email?.split('@')[0] || "Unknown"}
-                                                            {p.role === 'organizer' && ' (Host)'}
-                                                        </span>
-                                                    ))}
+                                                    {/* ✅ 수정 3: any 대신 ParticipantData 타입 사용 및 profiles 배열 처리 */}
+                                                    {booking.participants.map((p: ParticipantData, idx: number) => {
+                                                        const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+                                                        return (
+                                                            <span key={idx} className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-md text-slate-700">
+                                                                {profile?.email?.split('@')[0] || "Unknown"}
+                                                                {p.role === 'organizer' && ' (Host)'}
+                                                            </span>
+                                                        );
+                                                    })}
                                                 </div>
 
                                                 {booking.myRole === 'organizer' && (
@@ -273,4 +308,3 @@ export default async function DashboardPage() {
         </div>
     )
 }
-

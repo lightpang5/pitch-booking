@@ -122,14 +122,16 @@ export function BookingEditDialog({
 
     // 주간 범위 변경 시 데이터 다시 조회
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchReservations()
     }, [fetchReservations])
 
-// 👇 다이얼로그 열릴 때 초기화 (이 부분을 통째로 교체하세요!)
+// 👇 다이얼로그 열릴 때 초기화 
     useEffect(() => {
         if (open) {
             const d = parseISO(currentDate);
             const localD = new Date(d);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSelectedSlot({
                 date: localD,
                 time: format(localD, "HH:mm")
@@ -145,8 +147,12 @@ export function BookingEditDialog({
                 
                 if (data) {
                     const emails = data
-                        .map((p: any) => p.profiles?.email)
-                        .filter(Boolean); // null이나 undefined 값은 걸러냅니다.
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        .map((p: any) => {
+                            const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+                            return profile?.email;
+                        })
+                        .filter(Boolean) as string[]; // null이나 undefined 값은 걸러냅니다.
                     setExistingEmails(emails);
                 }
             };
@@ -272,8 +278,7 @@ export function BookingEditDialog({
                 <div className="grid gap-6 py-4">
                     <div className="border rounded-md p-2 bg-slate-50">
                         {/* ✅ 수정 7: 내부에서 조회한 데이터(fetchedReservations)와 핸들러 연결 */}
-                        <BookingScheduler
-                            pitchId={pitchId}
+                        <BookingScheduler                            
                             reservations={fetchedReservations} // 👈 방금 DB에서 성공적으로 가져온(Array(2)) 데이터를 줍니다!
                             // reservations={fetchedReservations}
                             selectedSlot={selectedSlot}

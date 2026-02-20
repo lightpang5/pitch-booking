@@ -55,6 +55,7 @@ export function AvailabilityChecker({ pitchId, pricePerHour }: { pitchId: string
     }, [pitchId, supabase, weekRange.end, weekRange.start])
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchReservations()
     }, [fetchReservations])
 
@@ -171,8 +172,7 @@ export function AvailabilityChecker({ pitchId, pricePerHour }: { pitchId: string
                     <CardTitle>Weekly Schedule</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <BookingScheduler
-                        pitchId={pitchId}
+                    <BookingScheduler                        
                         reservations={reservations}
                         selectedSlot={date && selectedTime ? { date, time: selectedTime } : null}
                         onSelectSlot={handleSlotSelect}

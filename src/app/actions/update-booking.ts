@@ -5,6 +5,22 @@ import { revalidatePath } from "next/cache"
 import { format } from "date-fns"
 import { ko } from "date-fns/locale"
 
+// ✅ 수정 1: DB에서 가져오는 Participant 구조 정의
+interface Participant {
+    user_id: string;
+    role: string;
+    status: string;
+}
+
+// ✅ 수정 2: DB에서 가져오는 Booking 구조 정의
+interface BookingData {
+    user_id: string;
+    pitch_id: string;
+    start_time: string;
+    end_time: string;
+    booking_participants: Participant[] | null;
+}
+
 export async function updateBooking(
     bookingId: string,
     newDate: Date,
@@ -20,20 +36,21 @@ export async function updateBooking(
     }
 
     // 2. Fetch Existing Booking (Permission & Time Check)
-    const { data: booking, error: fetchError } = await supabase
+    const { data: bookingRaw, error: fetchError } = await supabase
         .from('bookings')
         .select('user_id, pitch_id, start_time, end_time, booking_participants(user_id, role, status)')
         .eq('id', bookingId)
         .single()
 
-    if (fetchError || !booking) {
+    if (fetchError || !bookingRaw) {
         console.error("Fetch Error:", fetchError)
         return { error: "Booking not found." }
     }
 
-    const castedBooking = booking as any;
+    // ✅ 수정 3: any 대신 정의한 인터페이스(BookingData)로 타입 단언
+    const booking = bookingRaw as unknown as BookingData;
     const isOrganizer = booking.user_id === user.id;
-    const userParticipant = castedBooking.booking_participants?.find((p: any) => p.user_id === user.id);
+    const userParticipant = booking.booking_participants?.find((p) => p.user_id === user.id);
 
     if (!isOrganizer && (!userParticipant || (userParticipant.status !== 'accepted' && userParticipant.role !== 'organizer'))) {
         if (booking.user_id !== user.id) {
@@ -41,24 +58,23 @@ export async function updateBooking(
         }
     }
 
-    // 3. 시간 변경 여부 판단 (완벽한 비교를 위해 Date 객체로 변환 후 밀리초 비교)
+    // 3. 시간 변경 여부 판단
     const startTime = new Date(newDate);
     const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
 
     const newStartTimeISO = startTime.toISOString();
     const newEndTimeISO = endTime.toISOString();
 
-    // ⭐ [핵심 수정] DB 문자열을 Date 객체로 바꾼 뒤, 절대적인 숫자(getTime)로 똑같은지 비교합니다!
     const originalStartTime = new Date(booking.start_time);
     const isTimeChanged = originalStartTime.getTime() !== startTime.getTime();
 
     console.log("🔥 [서버 시간 비교]", {
         originalTime: originalStartTime.toISOString(),
         newTime: startTime.toISOString(),
-        isTimeChanged: isTimeChanged // 👈 이제 이게 false로 제대로 찍힐 겁니다!
+        isTimeChanged: isTimeChanged
     });
 
-    // 4. Update Booking Time (시간이 진짜 바뀌었을 때만!)
+    // 4. Update Booking Time
     if (isTimeChanged) {
         const { error: updateError } = await supabase
             .from('bookings')
@@ -75,7 +91,7 @@ export async function updateBooking(
         }
     }
 
-    // 5. Add New Attendees (if any)
+    // 5. Add New Attendees
     let newParticipantIds: string[] = []
     if (newAttendeeEmails.length > 0) {
         const { data: profiles } = await supabase
@@ -114,7 +130,7 @@ export async function updateBooking(
         }
     }
 
-    // 6. Notify *other* existing participants (시간이 진짜 바뀌었을 때만!)
+    // 6. Notify *other* existing participants
     if (isTimeChanged) {
         const { data: allParticipants } = await supabase
             .from('booking_participants')
@@ -135,7 +151,6 @@ export async function updateBooking(
 
             await supabase.from('notifications').insert(updateNotes)
 
-            // Reset status to 'pending' (시간이 바뀌었으니 기존 멤버들도 다시 승인해야 함)
             await supabase
                 .from('booking_participants')
                 .update({ status: 'pending' })
@@ -146,7 +161,8 @@ export async function updateBooking(
 
     // 7. UI 새로고침
     revalidatePath('/dashboard', 'page')
-    const pitchId = castedBooking?.pitch_id || (booking as any)?.pitch_id;
+    // ✅ 수정 4: any 제거하고 안전하게 pitch_id 접근
+    const pitchId = booking.pitch_id;
     if (pitchId) {
         revalidatePath(`/pitches/${pitchId}`, 'page')
     }
