@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useChat } from '@ai-sdk/react';
@@ -17,14 +18,13 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 // Helper to safely get the sender function
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const getSender = (helpers: any) => {
     if (typeof helpers.append === 'function') return helpers.append;
     if (typeof helpers.sendMessage === 'function') return helpers.sendMessage;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
     if (typeof helpers.reload === 'function') return async (msg: any) => {
-        if (helpers.setMessages) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (helpers.setMessages) {            
             helpers.setMessages((prev: any[]) => [...prev, msg]);
         }
         return helpers.reload();
@@ -38,7 +38,6 @@ export function ChatBot() {
     const [userId, setUserId] = useState<string | null>(null);
     const supabase = createClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { messages, setMessages, status, error: chatError, reload, append } = useChat({
         id: userId ? `chat-${userId}` : 'chat-guest',
         onError: (error) => console.error("Chat error:", error),
@@ -54,8 +53,7 @@ export function ChatBot() {
         };
 
         checkUser();
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
             const newUserId = session?.user?.id || null;
             if (newUserId !== userId) {

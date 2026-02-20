@@ -1,0 +1,11 @@
+# 린트 검사에서 제외할 파일들
+*.js
+check-users.js
+check_db_bookings.js
+check_models.js
+insert_test_booking.js
+inspect_sdk.js
+verify-bookings.js
+verify-pitches.js
+verify-raw.js
+tests/
